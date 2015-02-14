@@ -1,25 +1,248 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template"
+author: "Tarig Elamin"
+date: "Friday, February 13, 2015"
+output:
+  md_document
+    
 ---
+---
+                **Data Science Specialization**  Winter 2015
+
+                **Reproduciable Research Course** 
+
+                *****Assignment_1****************
+                             
+                by **Tarig Elamin*****
+----
+
+**in this assignment our plan is to answer  the following questions:**
+
+1. What is mean total number of steps taken per day?
+
+2. What is the average daily activity pattern?
+
+3. Which 5-minute interval, on average across all the days in the dataset, 
+
+contains the maximum number of steps?
+ 
+4. Do these values differ from the estimates from the first part of the 
+
+assignment?
+
+5. What is the impact of imputing    
+
+#####data access
+
+The data downloaded from this link:
+
+https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip
+
+and then unzipped in our working directory.Then, in the following steps below
+
+,R program  code is built and run to find out about the answers.
 
 
-## Loading and preprocessing the data
+                   **working directory** 
+  C://Users//abdu//Desktop//data_science//reproducible research course
+
+----
+
+```{r}
+activ <- read.csv("C://Users//abdu//Desktop//data_science//reproducible research course//activity.csv" ,colClasses = c("integer", "Date", "factor"))
+activ$month <- as.numeric(format(activ$date, "%m"))
+# ignoring the missing observations in this stage of analysis
+noNA<- na.omit(activ)
+rownames(noNA) <- 1:nrow(noNA )
+head(noNA)
+dim(noNA)
+library(ggplot2)
+```
+
+** For the mean total number of steps taken per day and the median as well,**
+
+**the R code is below**
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+my_grob = grobTree(textGrob("Tarig Elamin,    project1!", x=0.1,  y=0.95, hjust=0,
+  gp=gpar(col="yellow", fontsize=15, fontface="italic")))
+z<-ggplot(noNA, aes(date, steps)) + geom_bar(stat = "identity", colour = "steelblue", fill = "springgreen", width = 0.7) + facet_grid(. ~ month, scales = "free") + labs(title = "Graph of Total Number of Steps Taken Each Day", x = "Date", y = "Total number of steps")+annotation_custom(my_grob)
+z + theme(panel.background = element_rect(fill = "blue"))
+totalSteps <- aggregate(noNA$steps, list(Date = noNA$date), FUN = "sum")$x
+mean(totalSteps)
+median(totalSteps)
+```
+
+** resulting in :the mean total number of steps taken per day = **10766.19**
+
+** resulting in :the median total number of steps taken per day = **10765**
+
+----
+
+**let's find out about the average daily activity pattern:**
+
+```{r}
+
+avgSteps <- aggregate(noNA$steps, list(interval = as.numeric(as.character(noNA$interval))), FUN = "mean")
+names(avgSteps)[2] <- "meanOfSteps"
+library(gridExtra)
+my_grob = grobTree(textGrob("Tarig Elamin,           project1!", x=0.1,  y=0.95, hjust=0,
+  gp=gpar(col="blue", fontsize=15, fontface="italic")))
+w<-ggplot(avgSteps, aes(interval, meanOfSteps)) + geom_line(color = "green3", size = 0.8) + labs(title = "Time Series graph of the 5_Minute Interval", x = "5_Minute Intervals", y = "Average_Number_ of _Steps Taken")+
+  annotation_custom(my_grob)
+w + theme(panel.background = element_rect(fill = "yellow"))
+
+```
+
+----
+
+Across all the days in the activity dataset -on average,the 5_minute interval
+
+, containing the maximum number of steps can be seen from this code below
+
+```{r}
+avgSteps[avgSteps$meanOfSteps == max(avgSteps$meanOfSteps), ]
+```
+
+so with the corresponding interval,the average of steps is turned out to be =**206.1698**
+
+----
+
+missing data represents a big problem if we attend to a regression model for 
+
+example but first of all let's find out about the total number of missing 
+
+observations/rows and decide which approach one can use to impute the missing 
+
+data(one can select the mean or median or zero or a constant).Let's select 
+
+the mean to impute our missing values. 
 
 
 
-## What is mean total number of steps taken per day?
+
+```{r}
+sum(is.na(activ))
+```
+
+####the mean of 5_minute interval to replace the missing values in the new 
+
+####data:
+
+```{r}
+newData <- activ 
+for (i in 1:nrow(newData)) {
+    if (is.na(newData$steps[i])) {
+        newData$steps[i] <- avgSteps[which(newData$interval[i] == avgSteps$interval), ]$meanOfSteps
+    }
+}
+
+head(newData)
+sum(is.na(newData))
+```
+
+------
+
+1. **graph of the total number of steps taken each day**
+2. **Mean total number of steps taken per day**
+3. **Median total number of steps taken per day**
+
+ can be seen, below, for the new data that has no missing values:
+
+```{r}
+library(ggplot2)
+ww<-ggplot(newData, aes(date, steps)) + geom_bar(stat = "identity",
+                                             colour = "green3",
+                                             fill = "green",
+                                             width = 0.7) + facet_grid(. ~ month, scales = "free") + labs(title = "Graph of Total Number of Steps Taken Each Day (NOmissing data)", x = "Date", y = "Total_number_of_steps")
+ww+theme(panel.background = element_rect(fill = "blue"))
+
+```
 
 
+**Looking for mean and median of the old activ data(the one have missing** 
 
-## What is the average daily activity pattern?
+**values)against the new data that has nomissing.**
+
+============================================================================
+
+```{r}
+newTotalSteps <- aggregate(newData$steps, 
+                           list(Date = newData$date), 
+                           FUN = "sum")$x
+newMean <- mean(newTotalSteps)
+newMean
+newMedian <- median(newTotalSteps)
+newMedian
+oldMean <- mean(totalSteps)
+oldMedian <- median(totalSteps)
+newMean - oldMean
+newMedian - oldMedian
+```
+
+ 
+Noting that there is no difference between the old comparing to the new mean
+
+,but the new median is bigger than the old median.
+
+---------
+
+*The differences-if any- in activity patterns between weekdays and weekends*
+
+```{r}
+head(newData)
+newData$weekdays <- factor(format(newData$date, "%A"))
+levels(newData$weekdays)
+levels(newData$weekdays) <- list(weekday = c("Monday", "Tuesday",
+                                             "Wednesday", 
+                                             "Thursday", "Friday"),
+                                 weekend = c("Saturday", "Sunday"))
+levels(newData$weekdays)
+table(newData$weekdays)
+```
 
 
+------
 
-## Imputing missing values
+**The time series panel plot the 5_minute interval  and the average number**  
+
+** of steps taken averaged across all weekday days or weekend days .**  
+
+```{r}
+avgSteps <- aggregate(newData$steps, 
+                      list(interval = as.numeric(as.character(newData$interval)), 
+                           weekdays = newData$weekdays),
+                      FUN = "mean")
+names(avgSteps)[3] <- "meanOfSteps"
+library(lattice)
+xyplot(avgSteps$meanOfSteps ~ avgSteps$interval |avgSteps$weekdays, 
+        layout = c(1, 2), type = "l",
+       xlab = "Interval", ylab = "Number of steps",main="Average all weekday or weekend ,\nby Tarig Elamin-project_1",pch=19,col="green3")
+
+```
+
+                                 **Appendix:*
+
+**data definition:**
+
+*variable name:definition*
+
+1. steps: Number of steps taking in a 5-minute interval (missing values are 
+
+coded 
+
+as NA)
+
+2. date: The date on which the measurement was taken in YYYY-MM-DD format
+
+3. interval: Identifier for the 5-minute interval in which measurement was 
+
+taken
+
+   
 
 
+                            ** The End **
 
-## Are there differences in activity patterns between weekdays and weekends?
